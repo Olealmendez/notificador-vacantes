@@ -95,10 +95,12 @@ un mensaje claro en vez de fallar en silencio.
 
 | Archivo | Para qué sirve (en sencillo) |
 |---|---|
-| `index.js` | **El que manda.** Llama a todos los demás en orden. |
+| `index.js` | **El que manda** cuando lo ejecutás a mano. |
+| `nube.js` | **El que manda** cuando corre solo en la nube. |
 | `scraper.js` | El "robot" que visita la página del MEP y lee las vacantes. |
+| `db.js` | Guarda y lee la memoria en MongoDB Atlas. |
 | `mailer.js` | Arma el correo y lo manda. |
-| `storage.js` | Guarda y lee la memoria de lo ya avisado. |
+| `storage.js` | Guarda y lee la memoria de lo ya avisado (cuando corre a mano). |
 | `BuscarVacantes.bat` | **El programa.** En el Escritorio hay un acceso directo que lo llama. |
 | `vistos.json` | **La memoria.** No lo borres, o volverás a recibir avisos ya recibidos. |
 | `.env` | **Tus contraseñas.** Oculto y protegido. No se comparte con nadie. |
@@ -133,7 +135,8 @@ Todo se controla desde el archivo `.env`:
 | `EMAIL_TO` | El correo **que recibe** las alertas. |
 | `ESPECIALIDAD_BUSCADA` | La palabra que se busca. Ahora es `Música`. |
 | `TARGET_URL` | La página que se revisa. |
-| `ESPECIALIDAD_BUSCADA` | La palabra que se busca. Ahora es `Música`. |
+| `MONGODB_URI` | La conexión a Atlas. Solo si usás la versión en la nube. |
+| `MONGO_BD` | Nombre de la base. `notificador` por defecto. |
 
 Los siguientes valores son para ajustes finos. **Casi nunca hay que tocarlos**;
 déjalos como están salvo que sepas lo que haces.
