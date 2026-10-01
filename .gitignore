@@ -1,0 +1,21 @@
+# Credenciales y datos locales — NUNCA deben subirse
+.env
+.env.*
+!.env.example
+vistos.json
+ruta.txt
+*.danado-*
+
+# Dependencias
+node_modules/
+
+# Logs y archivos de error
+*.log
+npm-debug.log*
+logs/
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

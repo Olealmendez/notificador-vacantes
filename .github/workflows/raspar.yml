@@ -1,0 +1,60 @@
+name: Revisar vacantes MEP
+
+on:
+  workflow_dispatch:
+    inputs:
+      especialidad:
+        description: 'Especialidad a revisar (deja vacio para usar la del .env)'
+        required: false
+        type: string
+
+  schedule:
+    # Costa Rica es UTC-6 todo el anio, sin horario de verano.
+    # 07:00-17:00 hora de Costa Rica = 13:00-23:00 UTC (mismo dia)
+    - cron: '0 13-23 * * 1-5'
+    # 18:00-21:00 hora de Costa Rica = 00:00-03:00 UTC del dia siguiente
+    - cron: '0 0-3 * * 2-6'
+
+concurrency:
+  group: revision-mep
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      TARGET_URL: https://apps.mep.go.cr/formulario
+      ESPECIALIDAD_BUSCADA: ${{ github.event.inputs.especialidad || 'Música' }}
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+      TZ: America/Costa_Rica
+
+    steps:
+      - name: Copiar el codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci --omit=dev
+
+      - name: Usar el Chrome que ya trae el servidor
+        run: |
+          echo "PUPPETEER_EXECUTABLE=$(which google-chrome || which google-chrome-stable)" >> "$GITHUB_ENV"
+          google_chrome="$(which google-chrome || which google-chrome-stable)"
+          echo "Version: $("$google_chrome" --version)"
+
+      - name: Revisar el portal del MEP
+        run: node nube.js
