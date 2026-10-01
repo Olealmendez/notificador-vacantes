@@ -24,7 +24,9 @@ permissions:
 
 jobs:
   revisar:
-    runs-on: ubuntu-latest
+    # Fijado a 24.04 a proposito: "ubuntu-latest" va a migrar a Ubuntu 26
+    # el 19 de octubre de 2026 y ese cambio podria romper la corrida.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     env:
@@ -39,10 +41,10 @@ jobs:
 
     steps:
       - name: Copiar el codigo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Preparar Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -52,9 +54,13 @@ jobs:
 
       - name: Usar el Chrome que ya trae el servidor
         run: |
-          echo "PUPPETEER_EXECUTABLE=$(which google-chrome || which google-chrome-stable)" >> "$GITHUB_ENV"
-          google_chrome="$(which google-chrome || which google-chrome-stable)"
-          echo "Version: $("$google_chrome" --version)"
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || true)"
+          if [ -z "$CHROME" ]; then
+            echo "::error::No se encontro Chrome en este servidor. Habria que quitar PUPPETEER_SKIP_DOWNLOAD."
+            exit 1
+          fi
+          echo "PUPPETEER_EXECUTABLE=$CHROME" >> "$GITHUB_ENV"
+          echo "Chrome: $("$CHROME" --version)"
 
       - name: Revisar el portal del MEP
         run: node nube.js

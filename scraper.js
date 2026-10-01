@@ -64,18 +64,23 @@ const ARGUMENTOS_CHROME = [
 async function lanzarNavegador() {
   const base = { headless: true, args: ARGUMENTOS_CHROME };
 
+  const intentos = [];
   if (process.env.PUPPETEER_EXECUTABLE) {
-    return puppeteer.launch({ ...base, executablePath: process.env.PUPPETEER_EXECUTABLE });
+    intentos.push({ ...base, executablePath: process.env.PUPPETEER_EXECUTABLE });
+  }
+  intentos.push(base, { ...base, channel: 'chrome' });
+
+  const fallos = [];
+
+  for (const opciones of intentos) {
+    try {
+      return await puppeteer.launch(opciones);
+    } catch (err) {
+      fallos.push(`${opciones.executablePath || opciones.channel || 'chromium de puppeteer'}: ${err.message.split('\n')[0]}`);
+    }
   }
 
-  try {
-    return await puppeteer.launch(base);
-  } catch (err) {
-    if (/Could not find Chrome|does not exist|ENOENT/i.test(err.message)) {
-      return puppeteer.launch({ ...base, channel: 'chrome' });
-    }
-    throw err;
-  }
+  throw new Error(`No se pudo abrir el navegador. Intentos:\n  - ${fallos.join('\n  - ')}`);
 }
 
 function palabrasClaveRegion(label) {
