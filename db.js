@@ -16,10 +16,39 @@ function obtenerUri() {
   return MONGO_URI;
 }
 
+function describirErrorConexion(err) {
+  const base = `No se pudo conectar a MongoDB Atlas: ${err.message}`;
+
+  if (/Authentication failed|auth/i.test(err.message)) {
+    return (
+      `${base}\n` +
+      'La contrasena no es la correcta. Si cambiaste la contrasena del usuario en Atlas, ' +
+      'hay que actualizarla en los dos sitios: el secreto MONGODB_URI de GitHub y el .env de esta maquina.'
+    );
+  }
+
+  if (/timed out|Server selection|ENOTFOUND|SrvRecord|getaddrinfo|IP .* not allowed/i.test(err.message)) {
+    return (
+      `${base}\n` +
+      'Problema de red. En Atlas > Network Access tiene que estar permitida la entrada 0.0.0.0/0, ' +
+      'porque GitHub cambia de direccion IP en cada corrida y no publica las suyas.'
+    );
+  }
+
+  return base;
+}
+
 async function obtenerBase() {
   if (!cliente) {
     const nuevo = new MongoClient(obtenerUri(), { serverSelectionTimeoutMS: 20000 });
-    await nuevo.connect();
+
+    try {
+      await nuevo.connect();
+    } catch (err) {
+      await nuevo.close().catch(() => {});
+      throw new Error(describirErrorConexion(err));
+    }
+
     cliente = nuevo;
   }
 
