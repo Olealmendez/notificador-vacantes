@@ -75,6 +75,18 @@ module.exports = async (req, res) => {
       }
     }
 
+    // Si acaba de pedir confirmación, no se vuelve a enviar nada. Se responde
+    // igual que si se hubiera enviado, para no darle pistas a quien abusa.
+    const envio = await db.registrarIntentoEnvio(correo);
+
+    if (!envio.permitido) {
+      console.warn(`[suscribir] Envio contenido para ${correo} (${envio.motivo}).`);
+      return res.status(200).json({
+        ok: true,
+        mensaje: `Te enviamos un correo a ${correo}. Abrelo y presiona "Confirmar suscripcion".`,
+      });
+    }
+
     const token = tokenAleatorio();
     await db.crearSuscriptor({ correo, especialidades: elegidas, tokenConfirmacion: token });
 

@@ -1,10 +1,17 @@
 const db = require('../db');
-const { tokenBaja, permitirCORS } = require('./_lib');
+const { permitirCORS } = require('./_lib');
+const { tokenBaja, esTokenValido, LONGITUD_TOKEN_BAJA } = require('../tokens');
 
 module.exports = async (req, res) => {
   if (permitirCORS(req, res)) return;
 
-  const token = (req.query && req.query.token) || '';
+  const recibido = (req.query && req.query.token) || '';
+
+  if (!esTokenValido(recibido, LONGITUD_TOKEN_BAJA)) {
+    return res.redirect(302, '/gracias.html?estado=baja-invalida');
+  }
+
+  const token = String(recibido).trim();
 
   if (!token) {
     return res.redirect(302, '/gracias.html?estado=baja-invalida');

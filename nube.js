@@ -1,5 +1,12 @@
 require('dotenv').config({ quiet: true });
 
+const { registrar } = require('./seguridad');
+
+const consolaReal = { log: console.log, warn: console.warn, error: console.error };
+console.log = registrar(consolaReal, 'log');
+console.warn = registrar(consolaReal, 'warn');
+console.error = registrar(consolaReal, 'error');
+
 const { buscarVacantesDetallado } = require('./scraper');
 const { enviarAPersona } = require('./mailer');
 const { urlBaja } = require('./tokens');

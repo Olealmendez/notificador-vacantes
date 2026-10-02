@@ -2,6 +2,7 @@ require('dotenv').config({ quiet: true });
 
 const { MongoClient } = require('mongodb');
 const { CATALOGO, sinDuplicar, juntar } = require('./especialidades-base');
+const { esTokenValido, LONGITUD_TOKEN_CONFIRMAR } = require('./tokens');
 
 const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 const NOMBRE_BD = process.env.MONGO_BD || 'notificador';
@@ -40,6 +41,12 @@ function describirErrorConexion(err) {
 }
 
 const DIAS_LOG = Number(process.env.DIAS_LOG || 90);
+const MINUTOS_ENTRE_ENVIO = Number(process.env.MINUTOS_ENTRE_ENVIO || 10);
+const MAX_ENVIOS_POR_HORA = Number(process.env.MAX_ENVIOS_POR_HORA || 30);
+
+function horaDeVentana() {
+  return new Date().toISOString().slice(0, 13);
+}
 
 async function obtenerBase() {
   if (!cliente) {
@@ -56,7 +63,7 @@ async function obtenerBase() {
   }
 
   const base = cliente.db(NOMBRE_BD);
-
+  const control = base.collection('control');
   const idxEjec = base.collection('ejecuciones');
 
   try {
@@ -73,6 +80,7 @@ async function obtenerBase() {
     ),
     base.collection('especialidades').createIndex({ nombre: 1 }, { unique: true }),
     base.collection('suscriptores').createIndex({ email: 1 }, { unique: true }),
+    control.createIndex({ creadoEn: 1 }, { expireAfterSeconds: 172800 }),
   ]);
 
   return base;
@@ -261,10 +269,12 @@ async function crearSuscriptor({ correo, especialidades, tokenConfirmacion }) {
 }
 
 async function confirmarSuscriptor(token) {
-  if (!token) return null;
+  if (!esTokenValido(token, LONGITUD_TOKEN_CONFIRMAR)) return null;
 
   const base = await obtenerBase();
-  const doc = await base.collection('suscriptores').findOne({ tokenConfirmacion: token });
+  const doc = await base
+    .collection('suscriptores')
+    .findOne({ tokenConfirmacion: String(token).trim() });
 
   if (!doc) return null;
 
@@ -303,10 +313,53 @@ async function listarSuscriptores() {
     .toArray();
 }
 
+function puedeEnviarConfirmacion(email) {
+  return { MINUTOS_ENTRE_ENVIO, MAX_ENVIOS_POR_HORA, horaDeVentana };
+}
+
+async function registrarIntentoEnvio(email) {
+  const base = await obtenerBase();
+  const control = base.collection('control');
+  const correo = normalizarEmail(email);
+  const ahora = new Date();
+  const ventana = horaDeVentana();
+  const clave = `envio:${correo}`;
+
+  const uso = await control.findOneAndUpdate(
+    { _id: `ventana:${ventana}` },
+    { $inc: { n: 1 }, $setOnInsert: { creadoEn: ahora } },
+    { upsert: true, returnDocument: 'after' },
+  );
+
+  const enviadosEstaHora = uso && uso.n ? uso.n : 1;
+  if (enviadosEstaHora > MAX_ENVIOS_POR_HORA) {
+    return { permitido: false, motivo: 'tope-horario' };
+  }
+
+  // El ultimo envio se guarda aparte del suscriptor para que el limite
+  // funcione aunque ese documento todavia no exista.
+  const anterior = await control.findOneAndUpdate(
+    { _id: clave },
+    { $set: { ultimoEnvio: ahora }, $setOnInsert: { creadoEn: ahora } },
+    { upsert: true, returnDocument: 'before' },
+  );
+
+  const ultimo = anterior && anterior.ultimoEnvio ? new Date(anterior.ultimoEnvio).getTime() : 0;
+
+  if (ultimo && ahora.getTime() - ultimo < MINUTOS_ENTRE_ENVIO * 60000) {
+    return { permitido: false, motivo: 'frecuencia' };
+  }
+
+  return { permitido: true, motivo: 'ok' };
+}
+
 module.exports = {
   obtenerBase,
   cerrar,
   medirUso,
+  registrarIntentoEnvio,
+  MINUTOS_ENTRE_ENVIO,
+  MAX_ENVIOS_POR_HORA,
   DIAS_LOG,
   registrarEjecucion,
   obtenerUltimaEjecucion,

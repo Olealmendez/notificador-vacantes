@@ -3,8 +3,25 @@ const crypto = require('crypto');
 const APP_SECRET = process.env.APP_SECRET || '';
 const APP_URL = (process.env.APP_URL || '').replace(/\/$/, '');
 
+const LONGITUD_TOKEN_CONFIRMAR = 48;
+const LONGITUD_TOKEN_BAJA = 32;
+
 function normalizar(texto) {
   return String(texto ?? '').trim().toLowerCase();
+}
+
+// Los tokens que genera este programa son siempre hexadecimal. Rechazar
+// cualquier otra cosa evita que alguien mande un objeto tipo {"$ne": null}
+// para saltarse la confirmacion del correo.
+function esTokenValido(token, longitud) {
+  if (typeof token !== 'string') return false;
+  const limpio = token.trim();
+  if (limpio.length > 200) return false;
+  return new RegExp(`^[a-f0-9]{${longitud}}$`).test(limpio);
+}
+
+function limpiarToken(token, longitud) {
+  return esTokenValido(token, longitud) ? token.trim() : '';
 }
 
 function tokenBaja(correo) {
@@ -43,6 +60,10 @@ module.exports = {
   urlBaja,
   urlConfirmar,
   baseUrl,
+  esTokenValido,
+  limpiarToken,
+  LONGITUD_TOKEN_CONFIRMAR,
+  LONGITUD_TOKEN_BAJA,
   APP_SECRET,
   APP_URL,
 };

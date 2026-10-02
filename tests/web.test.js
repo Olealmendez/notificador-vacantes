@@ -33,17 +33,22 @@ before(async () => {
   servidor = s;
   await new Promise((r) => servidor.listen(PUERTO, '127.0.0.1', r));
   db = require('../db.js');
+
+  // Atlas no deja borrar la base entera con este usuario, asi que se limpia
+  // documento por documento para que las pruebas no dependan de la corrida
+  // anterior.
+  const base = await db.obtenerBase();
+  for (const col of ['suscriptores', 'control', 'ejecuciones']) {
+    await base.collection(col).deleteMany({});
+  }
 });
 
 after(async () => {
   if (db) {
-    const { MongoClient } = require('mongodb');
     const base = await db.obtenerBase();
-    const c = new MongoClient(process.env.MONGODB_URI);
-    await c.connect();
-    await c.db('prueba_web').dropDatabase().catch(() => {});
-    await c.close();
-    void base;
+    for (const col of ['suscriptores', 'control', 'ejecuciones']) {
+      await base.collection(col).deleteMany({});
+    }
     await db.cerrar();
   }
   if (servidor) servidor.close();
