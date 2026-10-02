@@ -17,15 +17,18 @@ function escaparHtml(texto) {
     .replace(/'/g, '&#39;');
 }
 
-function validarConfiguracion() {
+function validarConfiguracion(exigeDestinatario = false) {
   const faltantes = [];
   if (!process.env.EMAIL_USER) faltantes.push('EMAIL_USER');
   if (!process.env.EMAIL_PASS) faltantes.push('EMAIL_PASS');
-  if (!process.env.EMAIL_TO) faltantes.push('EMAIL_TO');
+  if (exigeDestinatario) {
+    const lista = (process.env.EMAIL_TO || '').trim();
+    if (!lista) faltantes.push('EMAIL_TO');
+  }
 
   if (faltantes.length > 0) {
     throw new Error(
-      `Faltan variables en el archivo .env: ${faltantes.join(', ')}. ` +
+      `Faltan variables de entorno: ${faltantes.join(', ')}. ` +
         'Para Gmail usa una Contraseña de aplicación, no tu contraseña normal.',
     );
   }
@@ -199,7 +202,7 @@ async function enviarAlerta(vacantesNuevas) {
     return null;
   }
 
-  validarConfiguracion();
+  validarConfiguracion(true);
 
   const asunto = `${vacantesNuevas.length} vacante(s) nueva(s) de ${ESPECIALIDAD_BUSCADA} en el MEP`;
 

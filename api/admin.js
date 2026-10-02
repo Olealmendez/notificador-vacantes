@@ -2,6 +2,7 @@ const db = require('../db');
 const { errorApi, verificarAdmin, permitirCORS } = require('./_lib');
 const { urlBaja } = require('../tokens');
 const { enviarResumen } = require('../mailer');
+const { ocultarSecretos } = require('../seguridad');
 
 const ESTADOS = ['activo', 'pendiente', 'pausado', 'baja', 'error-correo'];
 
@@ -107,6 +108,10 @@ module.exports = async (req, res) => {
     return errorApi(res, 405, 'Use GET o POST');
   } catch (err) {
     console.error('[admin]', err.message);
-    return errorApi(res, 500, 'Hubo un problema en el servidor');
+    return errorApi(
+      res,
+      500,
+      `${ocultarSecretos(err.message || 'sin detalle')} | revisar variables de entorno y la consola`,
+    );
   }
 };
