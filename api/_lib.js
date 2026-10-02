@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const { tokenBaja: calcularTokenBaja, urlBaja: calcularUrlBaja } = require('../tokens');
+const { tokenBaja: calcularTokenBaja, urlBaja: calcularUrlBaja, urlConfirmar: calcularUrlConfirmar } =
+  require('../tokens');
 
 const APP_URL = (process.env.APP_URL || '').replace(/\/$/, '');
 const APP_SECRET = process.env.APP_SECRET || '';
@@ -50,12 +51,12 @@ function normalizar(texto) {
     .toLowerCase();
 }
 
-function urlConfirmar(token) {
-  return `${APP_URL}/api/confirmar?token=${encodeURIComponent(token)}`;
+function urlConfirmar(token, req) {
+  return calcularUrlConfirmar(token, req);
 }
 
-function urlBaja(correo) {
-  return calcularUrlBaja(correo);
+function urlBaja(correo, req) {
+  return calcularUrlBaja(correo, req);
 }
 
 function verificarAdmin(req) {
@@ -84,8 +85,8 @@ function obtenerTransporter() {
   return transporter;
 }
 
-async function enviarConfirmacion({ correo, tokenConfirmacion, especialidades }) {
-  const enlace = urlConfirmar(tokenConfirmacion);
+async function enviarConfirmacion({ correo, tokenConfirmacion, especialidades }, req) {
+  const enlace = urlConfirmar(tokenConfirmacion, req);
   const lista = especialidades.length > 0 ? especialidades.join(', ') : 'todas las especialidades';
 
   return obtenerTransporter().sendMail({

@@ -79,7 +79,7 @@ module.exports = async (req, res) => {
     await db.crearSuscriptor({ correo, especialidades: elegidas, tokenConfirmacion: token });
 
     try {
-      await enviarConfirmacion({ correo, tokenConfirmacion: token, especialidades: elegidas });
+      await enviarConfirmacion({ correo, tokenConfirmacion: token, especialidades: elegidas }, req);
     } catch (err) {
       console.error('[suscribir] no se pudo enviar el correo:', err.message);
       await db.cambiarEstadoSuscriptor(correo, 'error-correo', { pausadoMotivo: err.message.slice(0, 200) });

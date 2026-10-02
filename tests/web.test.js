@@ -134,6 +134,39 @@ test('el enlace de baja solo afecta a su propio correo', async () => {
   assert.strictEqual((await base.collection('suscriptores').findOne({})).estado, 'baja');
 });
 
+test('los enlaces se arman con el dominio de la peticion si APP_URL no esta', async () => {
+  const ruta = require.resolve('../tokens.js');
+  const guardadoUrl = process.env.APP_URL;
+  delete process.env.APP_URL;
+  delete require.cache[ruta];
+  const t = require(ruta);
+
+  const enlace = t.urlConfirmar('abc', {
+    headers: { host: 'notificador-vacantes.vercel.app', 'x-forwarded-proto': 'https' },
+  });
+  assert.strictEqual(enlace, 'https://notificador-vacantes.vercel.app/api/confirmar?token=abc');
+
+  const baja = t.urlBaja('x@y.com', { headers: { host: 'otro.vercel.app', 'x-forwarded-proto': 'https' } });
+  assert.ok(baja.startsWith('https://otro.vercel.app/api/baja?token='));
+
+  if (guardadoUrl === undefined) delete process.env.APP_URL;
+  else process.env.APP_URL = guardadoUrl;
+  delete require.cache[ruta];
+});
+
+test('sin APP_SECRET avisa con un mensaje claro', () => {
+  const ruta = require.resolve('../tokens.js');
+  const guardado = process.env.APP_SECRET;
+  delete process.env.APP_SECRET;
+  delete require.cache[ruta];
+  const t = require(ruta);
+
+  assert.throws(() => t.tokenBaja('x@y.com'), /APP_SECRET/);
+
+  process.env.APP_SECRET = guardado;
+  delete require.cache[ruta];
+});
+
 test('el correo de aviso incluye el enlace de baja', async () => {
   const { construirHtml, construirTextoPlano } = require('../mailer.js');
   const { urlBaja } = require('../tokens.js');

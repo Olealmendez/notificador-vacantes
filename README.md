@@ -294,14 +294,21 @@ pública lista para compartir.
 2. **Add New → Project** → importá `notificador-vacantes` → **Deploy**
 3. Settings → **Environment Variables** → agregá estas seis:
 
-| Variable | Qué poner |
-|---|---|
-| `MONGODB_URI` | la connection string de Atlas |
-| `APP_URL` | la dirección que te dio Vercel, con https |
-| `APP_SECRET` | una frase larga inventada por vos |
-| `ADMIN_PASSWORD` | la contraseña del panel |
-| `EMAIL_USER` | tu Gmail |
-| `EMAIL_PASS` | tu contraseña de aplicación |
+| Variable | Qué poner | Dónde la sacás |
+|---|---|---|
+| `MONGODB_URI` | La connection string de Atlas | Atlas → **Database Access** → tu usuario `notificador` → **Connect** → **Drivers** → empieza con `mongodb+srv://` |
+| `EMAIL_USER` | Tu Gmail | El mismo que usás en `.env` |
+| `EMAIL_PASS` | Tu contraseña de aplicación | myaccount.google.com → Contraseñas de aplicación |
+| `ADMIN_PASSWORD` | Una contraseña a tu gusto | Se la inventás vos |
+| `APP_SECRET` | La frase que te doy más abajo | Copiala tal cual, con mayúsculas y minúsculas |
+| `APP_URL` | **Opcional.** Ver nota | Vercel → tu proyecto → **Domains** |
+
+**Sobre `APP_URL`:** no hace falta ponerla en el primer despliegue. Si está
+vacía, el programa usa el dominio de cada visita para armar los enlaces, así
+que funcionan igual. Solo ponela si cambias el dominio del sitio más adelante.
+
+**Ojo con los nombres:** en Vercel importan las mayúsculas y minúsculas.
+`MONGODB_URI` y `mongodb_uri` no son lo mismo.
 
 4. Redeploy. Listo.
 
@@ -337,10 +344,16 @@ Vercel responde en milisegundos.
 
 ### En los dos casos falta lo mismo
 
-Agregá también `APP_SECRET` como secreto en **GitHub → Settings → Secrets →
-Actions**, con **el mismo valor** que pusiste en Vercel. El robot en la nube
-lo usa para firmar los enlaces de baja. Si no coinciden, los enlaces de los
-correos saldrán rotos.
+Agregá `APP_SECRET` como secreto en **GitHub → Settings → Secrets and variables
+→ Actions**, con **el mismo valor** que pusiste en Vercel:
+
+```
+1xblpbvkivzbD8LBEG8wSJMAxGOn6Qe1w3Cdu9DIMRw
+```
+
+El robot en la nube lo usa para firmar los enlaces de baja. Si los dos valores
+no coinciden, los enlaces de los correos salen rotos y nadie se puede dar de
+baja. Es lo único que hay que mantener igual en los dos sitios.
 
 ### Mirar cómo queda sin publicarlo
 

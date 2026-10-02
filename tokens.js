@@ -14,14 +14,35 @@ function tokenBaja(correo) {
   return crypto.createHmac('sha256', APP_SECRET).update(normalizar(correo)).digest('hex').slice(0, 32);
 }
 
-function urlBaja(correo) {
-  if (!APP_URL) return '';
-  return `${APP_URL}/api/baja?token=${encodeURIComponent(tokenBaja(correo))}`;
+function baseUrl(req) {
+  if (APP_URL) return APP_URL;
+
+  if (req && req.headers) {
+    const proto = String(req.headers['x-forwarded-proto'] || 'https').split(',')[0];
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    if (host) return `${proto}://${String(host).split(',')[0]}`;
+  }
+
+  return '';
+}
+
+function urlBaja(correo, req) {
+  const base = baseUrl(req);
+  if (!base) return '';
+  return `${base}/api/baja?token=${encodeURIComponent(tokenBaja(correo))}`;
+}
+
+function urlConfirmar(token, req) {
+  const base = baseUrl(req);
+  if (!base) return '';
+  return `${base}/api/confirmar?token=${encodeURIComponent(token)}`;
 }
 
 module.exports = {
   tokenBaja,
   urlBaja,
+  urlConfirmar,
+  baseUrl,
   APP_SECRET,
   APP_URL,
 };

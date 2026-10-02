@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
     }
 
     const destino = `/gracias.html?estado=ok&correo=${encodeURIComponent(suscriptor.email)}`;
-    res.setHeader('Set-Cookie', `baja=${encodeURIComponent(urlBaja(suscriptor.email))}; Path=/; Max-Age=31536000; SameSite=Lax`);
+    res.setHeader('Set-Cookie', `baja=${encodeURIComponent(urlBaja(suscriptor.email, req))}; Path=/; Max-Age=31536000; SameSite=Lax`);
     return res.redirect(302, destino);
   } catch (err) {
     console.error('[confirmar]', err.message);
