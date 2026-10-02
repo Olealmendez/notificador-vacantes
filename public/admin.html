@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administrar suscripciones</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <main class="caja">
+    <header>
+      <h1>Administrar suscripciones</h1>
+      <p class="sub">Solo para quien administra el sistema.</p>
+    </header>
+
+    <div id="acceso" class="cuerpo" style="padding:24px">
+      <label for="clave">Contrasena de administracion</label>
+      <input type="password" id="clave" autocomplete="current-password">
+      <button class="primario" id="entrar">Entrar</button>
+      <div class="aviso" id="aviso" hidden></div>
+    </div>
+
+    <div id="panel" hidden>
+      <div class="salud">
+        <span class="punto" id="punto-salud"></span>
+        <span id="texto-salud">Comprobando el estado del sistema…</span>
+      </div>
+
+      <fieldset>
+        <legend>Resumen</legend>
+        <p class="ayuda" id="resumen">—</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Personas suscritas</legend>
+        <div class="lista-check" style="max-height:none;border:0;padding:0">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Correo</th>
+                <th>Estado</th>
+                <th>Especialidades</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="filas"></tbody>
+          </table>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <p class="ayuda centro"><a href="/">Volver al inicio</a></p>
+      </fieldset>
+    </div>
+  </main>
+
+  <script src="/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Suscripcion confirmada</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <main class="caja">
+    <header>
+      <h1 id="titulo">Suscripcion</h1>
+      <p class="sub" id="detalle">Un momento…</p>
+    </header>
+
+    <div class="cuerpo" id="cuerpo">
+      <p><a href="/">Volver al inicio</a></p>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var estado = new URLSearchParams(window.location.search).get('estado');
+      var correo = new URLSearchParams(window.location.search).get('correo');
+      var titulo = document.getElementById('titulo');
+      var detalle = document.getElementById('detalle');
+      var cuerpo = document.getElementById('cuerpo');
+      var extra = '';
+
+      if (estado === 'ok') {
+        titulo.textContent = 'Listo, ya quedaste suscrito';
+        detalle.textContent = correo
+          ? 'A partir de ahora te avisamos en ' + correo + ' cuando aparezca una vacante de las especialidades que elegiste.'
+          : 'Te avisaremos cuando aparezca una vacante de las especialidades que elegiste.';
+        extra = '<p class="ayuda">No llega ningun correo hasta que se publique una vacante nueva. ' +
+          'Es normal que pase silencio varios dias.</p>';
+      } else if (estado === 'baja-ok') {
+        titulo.textContent = 'Suscripcion cancelada';
+        detalle.textContent = 'Ya no te vamos a mandar correos. Lo que podemos reconsiderar cuando quieras.';
+        extra = '<p class="ayuda">Si fue un error, puedes volver a suscribirte en un minuto.</p>';
+      } else if (estado === 'baja-invalida' || estado === 'invalido') {
+        titulo.textContent = 'Ese enlace no sirve';
+        detalle.textContent = 'El enlace ya se uso, expiro o esta mal escrito.';
+        extra = '<p class="ayuda">Para cambiar tus preferencias, suscribite de nuevo con el mismo correo.</p>';
+      } else {
+        titulo.textContent = 'Algo salio mal';
+        detalle.textContent = 'No pudimos completar la operacion. Intenta de nuevo en unos minutos.';
+      }
+
+      if (extra) {
+        var div = document.createElement('div');
+        div.innerHTML = extra;
+        while (div.firstChild) cuerpo.insertBefore(div.firstChild, cuerpo.firstChild);
+      }
+    })();
+  </script>
+</body>
+</html>

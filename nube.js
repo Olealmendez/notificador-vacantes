@@ -2,11 +2,11 @@ require('dotenv').config({ quiet: true });
 
 const { buscarVacantesDetallado } = require('./scraper');
 const { enviarAPersona } = require('./mailer');
+const { urlBaja } = require('./tokens');
 const db = require('./db');
 
 const EMAIL_TO = process.env.EMAIL_TO || '';
 const ESPECIALIDAD_BUSCADA = process.env.ESPECIALIDAD_BUSCADA || 'Música';
-const MAX_CORRIDAS_HORAS = Number(process.env.MAX_CORRIDAS_HORAS || 26);
 
 function paso(numero, mensaje) {
   const hora = new Date().toLocaleTimeString('es-CR', { timeZone: 'America/Costa_Rica' });
@@ -38,9 +38,10 @@ async function obtenerDestinatarios() {
   if (suscriptores.length > 0) {
     return suscriptores.map((s) => ({
       email: s.email,
-      especialidades: Array.isArray(s.especialidades) && s.especialidades.length > 0
-        ? s.especialidades
-        : [ESPECIALIDAD_BUSCADA],
+      especialidades:
+        Array.isArray(s.especialidades) && s.especialidades.length > 0
+          ? s.especialidades
+          : [ESPECIALIDAD_BUSCADA],
     }));
   }
 
@@ -70,9 +71,11 @@ async function main() {
   }
 
   paso(3, 'Guardando especialidades y vacantes nuevas...');
-  const nuevasEspecialidades = await db.registrarEspecialidades(especialidades);
-  console.log(`  -> ${nuevasEspecialidades} especialidad(es) nueva(s) en el catálogo.`);
-
+  const catalogo = await db.registrarEspecialidades(especialidades);
+  console.log(
+    `  -> catalogo con ${catalogo.total} especialidad(es)` +
+      (catalogo.borradas > 0 ? `, ${catalogo.borradas} duplicada(s) limpiada(s)` : ''),
+  );
   const nuevas = todasLasVacantes.filter((v) => !idsVistos.has(v.id));
   const guardadas = await db.guardarVacantesNuevas(nuevas);
   console.log(`  -> ${nuevas.length} vacante(s) nueva(s), ${guardadas} guardada(s) en la base.`);
@@ -99,9 +102,17 @@ async function main() {
 
     if (suyas.length === 0) continue;
 
+    let baja = '';
+    try {
+      baja = urlBaja(destinatario.email);
+    } catch (err) {
+      console.warn(`  -> Sin enlace de baja para ${destinatario.email}: ${err.message}`);
+    }
+
     try {
       await enviarAPersona(destinatario.email, suyas, {
         etiqueta: destinatario.especialidades.join(' / '),
+        urlBaja: baja,
       });
       enviados += 1;
     } catch (err) {

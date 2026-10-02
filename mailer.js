@@ -48,8 +48,11 @@ function obtenerTransporter() {
   return transporter;
 }
 
-function construirHtml(vacantes, etiqueta) {
+function construirHtml(vacantes, etiqueta, opciones = {}) {
   const linea = etiqueta || ESPECIALIDAD_BUSCADA;
+  const baja = opciones.urlBaja
+    ? `<p style="margin:0"><a href="${escaparHtml(opciones.urlBaja)}" style="color:#5f6368">Darte de baja de estos avisos</a></p>`
+    : '';
   const filas = vacantes
     .map((v) => {
       const enlace = process.env.TARGET_URL
@@ -107,13 +110,14 @@ function construirHtml(vacantes, etiqueta) {
 
     <div style="padding:14px 24px;background:#f1f3f4;font-size:12px;color:#5f6368;">
       Generado autom&aacute;ticamente el ${escaparHtml(fecha)} &middot; Ministerio de Educaci&oacute;n P&uacute;blica de Costa Rica.
+      ${baja}
     </div>
   </div>
 </body>
 </html>`;
 }
 
-function construirTextoPlano(vacantes, etiqueta) {
+function construirTextoPlano(vacantes, etiqueta, opciones = {}) {
   const linea = etiqueta || ESPECIALIDAD_BUSCADA;
   const lineas = vacantes.map(
     (v) =>
@@ -126,6 +130,7 @@ function construirTextoPlano(vacantes, etiqueta) {
     ...lineas,
     '',
     `Consulta: ${process.env.TARGET_URL || ''}`,
+    opciones.urlBaja ? `\nDarte de baja: ${opciones.urlBaja}` : '',
   ].join('\n');
 }
 
@@ -142,8 +147,8 @@ async function enviarAPersona(destinatario, vacantesNuevas, opciones = {}) {
     from: `"${EMAIL_FROM_NOMBRE}" <${process.env.EMAIL_USER}>`,
     to: destinatario,
     subject: asunto,
-    text: construirTextoPlano(vacantesNuevas, etiqueta),
-    html: construirHtml(vacantesNuevas, etiqueta),
+    text: construirTextoPlano(vacantesNuevas, etiqueta, opciones),
+    html: construirHtml(vacantesNuevas, etiqueta, opciones),
   });
 
   console.log(`[mailer] Correo enviado a ${destinatario} (${vacantesNuevas.length} vacante(s)).`);

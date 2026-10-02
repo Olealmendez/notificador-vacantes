@@ -101,6 +101,11 @@ un mensaje claro en vez de fallar en silencio.
 | `db.js` | Guarda y lee la memoria en MongoDB Atlas. |
 | `mailer.js` | Arma el correo y lo manda. |
 | `storage.js` | Guarda y lee la memoria de lo ya avisado (cuando corre a mano). |
+| `tokens.js` | Fabrica los enlaces de baja de cada persona. |
+| `especialidades-base.js` | Catálogo fijo de especialidades de enseñanza. |
+| `api/` | La página web y lo que hay detrás. |
+| `public/` | Los archivos que se ven en el navegador. |
+| `tests/` | Las pruebas que se corren con `npm test`. |
 | `BuscarVacantes.bat` | **El programa.** En el Escritorio hay un acceso directo que lo llama. |
 | `vistos.json` | **La memoria.** No lo borres, o volverás a recibir avisos ya recibidos. |
 | `.env` | **Tus contraseñas.** Oculto y protegido. No se comparte con nadie. |
@@ -241,6 +246,39 @@ en el correo, para no mandar correos de verdad). Cierra con `Ctrl+C`.
 - El programa se conecta a Google por HTTPS cifrado.
 
 ---
+
+## La página web
+
+Cualquiera puede suscribirse desde el navegador. No hace falta instalar nada.
+
+1. Abrís la dirección del sitio
+2. Escribís para filtrar las especialidades y marcá las tuyas
+3. Ponés tu correo → te llega un correo de confirmación → lo abrís y listo
+
+Nadie recibe nada hasta que confirma su correo. Eso impide que alguien escriba el
+correo de otra persona y le haga llegar avisos, y también que se subscan
+miles de correos falsos.
+
+El catálogo de especialidades tiene una parte fija (las de enseñanza) y otra que
+se arma sola con lo que el MEP va publicando. La fija es importante: si nadie
+eligiera Música porque no hay vacantes de Música ahora mismo, no podría
+suscribirse justo cuando la necesita.
+
+### Administrar
+
+En `/admin.html` con la contraseña de administración: ver quién está suscrito,
+pausar a alguien o darlo de baja. Cada persona además puede darse de baja sola
+con el enlace que viene en cada correo.
+
+### Mirar cómo queda, sin publicarlo
+
+```
+npm run web
+```
+
+Levanta la página en `http://127.0.0.1:4788`. Es una vista de prueba: no manda
+correos de verdad y usa la base de datos normal, así que no te suscribas con
+direcciones falsas que no quieras.
 
 ## Dejarlo trabajando solo
 

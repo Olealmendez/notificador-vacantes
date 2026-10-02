@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Avisos de vacantes del MEP</title>
+  <meta name="description" content="Recibe por correo las vacantes del Ministerio de Educacion que te interesen.">
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <main class="caja">
+    <header>
+      <h1>Avisos de vacantes del MEP</h1>
+      <p class="sub">Elige las especialidades que te interesan y te avisamos por correo
+        cuando el Ministerio de Educación publique una vacante nueva.</p>
+    </header>
+
+    <div id="aviso" class="aviso" hidden></div>
+
+    <form id="formulario" novalidate>
+      <fieldset>
+        <legend>1. Elige tus especialidades</legend>
+        <p class="ayuda" id="ayuda-esp">Cargando la lista de especialidades…</p>
+
+        <input type="search" id="buscar" placeholder="Escribe para filtrar, por ejemplo: música"
+               autocomplete="off" aria-label="Filtrar especialidades">
+        <p class="ayuda" id="contador">—</p>
+
+        <div id="especialidades" class="lista-check"></div>
+        <p class="vacio" id="sin-resultados" hidden>Ninguna especialidad coincide con eso.</p>
+
+        <button type="button" id="marcar-todas" class="enlace" hidden>marcar todas</button>
+        <button type="button" id="ninguna" class="enlace" hidden>desmarcar todas</button>
+        <p class="error" id="error-esp" hidden>Elegí al menos una especialidad.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>2. Tu correo</legend>
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" name="email" placeholder="nombre@ejemplo.com"
+               autocomplete="email" required inputmode="email">
+        <p class="ayuda">Te vamos a mandar un correo para confirmar que es tuyo. No se manda
+          ningún aviso hasta que lo abras.</p>
+      </fieldset>
+
+      <button type="submit" id="enviar" class="primario">Quiero recibir los avisos</button>
+      <p class="ayuda centro">
+        <a href="/admin.html">Administrar suscripciones</a>
+      </p>
+    </form>
+
+    <section class="salud" id="salud">
+      <span class="punto" id="punto-salud"></span>
+      <span id="texto-salud">Comprobando el estado del sistema…</span>
+    </section>
+
+    <footer>
+      <p>Los datos se guardan en una base de datos de MongoDB Atlas. Podés darte de baja
+        cuando quieras con el enlace que viene en cada correo.</p>
+    </footer>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

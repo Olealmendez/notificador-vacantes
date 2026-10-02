@@ -1,6 +1,7 @@
 require('dotenv').config({ quiet: true });
 
 const { MongoClient } = require('mongodb');
+const { CATALOGO, sinDuplicar, juntar } = require('./especialidades-base');
 
 const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 const NOMBRE_BD = process.env.MONGO_BD || 'notificador';
@@ -97,10 +98,12 @@ async function obtenerUltimaEjecucion() {
 }
 
 async function registrarEspecialidades(nombres) {
-  if (!Array.isArray(nombres) || nombres.length === 0) return 0;
-
   const base = await obtenerBase();
-  const ops = [...new Set(nombres.map((n) => String(n).trim()).filter(Boolean))].map((nombre) => ({
+  const coleccion = base.collection('especialidades');
+
+  const finales = juntar(nombres || [], CATALOGO);
+
+  const ops = finales.map((nombre) => ({
     updateOne: {
       filter: { nombre },
       update: { $setOnInsert: { nombre, creadaEn: new Date(), activa: true } },
@@ -108,8 +111,24 @@ async function registrarEspecialidades(nombres) {
     },
   }));
 
-  const resultado = await base.collection('especialidades').bulkWrite(ops, { ordered: false });
-  return resultado.upsertedCount;
+  if (ops.length > 0) {
+    await coleccion.bulkWrite(ops, { ordered: false });
+  }
+
+  const guardadas = await coleccion.find({}, { projection: { nombre: 1 } }).toArray();
+  const sobrantes = guardadas
+    .map((d) => d.nombre)
+    .filter((nombre) => !finales.includes(nombre));
+
+  if (sobrantes.length > 0) {
+    await coleccion.deleteMany({ nombre: { $in: sobrantes } });
+  }
+
+  return { total: finales.length, agregadas: ops.length, borradas: sobrantes.length };
+}
+
+async function sembrarCatalogo() {
+  return registrarEspecialidades([]);
 }
 
 async function obtenerIdsVistos() {
@@ -162,16 +181,117 @@ async function contarVacantes() {
   return base.collection('vacantes').countDocuments();
 }
 
+function normalizarEmail(correo) {
+  return String(correo ?? '').trim().toLowerCase();
+}
+
+async function listarEspecialidades() {
+  const base = await obtenerBase();
+  return base
+    .collection('especialidades')
+    .find({}, { projection: { nombre: 1, activa: 1 } })
+    .sort({ nombre: 1 })
+    .toArray();
+}
+
+async function contarSuscriptores(estado) {
+  const base = await obtenerBase();
+  return base.collection('suscriptores').countDocuments(estado ? { estado } : {});
+}
+
+async function buscarSuscriptorPorEmail(correo) {
+  const base = await obtenerBase();
+  return base.collection('suscriptores').findOne({ email: normalizarEmail(correo) });
+}
+
+async function crearSuscriptor({ correo, especialidades, tokenConfirmacion }) {
+  const base = await obtenerBase();
+  const email = normalizarEmail(correo);
+  const ahora = new Date();
+
+  await base.collection('suscriptores').updateOne(
+    { email },
+    {
+      $set: {
+        email,
+        especialidades,
+        estado: 'pendiente',
+        tokenConfirmacion,
+        solicitadoEn: ahora,
+        confirmadoEn: null,
+        dadoDeBajaEn: null,
+        pausadoMotivo: null,
+      },
+    },
+    { upsert: true },
+  );
+
+  return buscarSuscriptorPorEmail(email);
+}
+
+async function confirmarSuscriptor(token) {
+  if (!token) return null;
+
+  const base = await obtenerBase();
+  const doc = await base.collection('suscriptores').findOne({ tokenConfirmacion: token });
+
+  if (!doc) return null;
+
+  await base.collection('suscriptores').updateOne(
+    { _id: doc._id },
+    {
+      $set: { estado: 'activo', confirmadoEn: new Date() },
+      $unset: { tokenConfirmacion: '' },
+    },
+  );
+
+  return buscarSuscriptorPorEmail(doc.email);
+}
+
+async function cambiarEstadoSuscriptor(email, estado, extra = {}) {
+  const base = await obtenerBase();
+  const cambios = { estado, ...extra };
+  await base.collection('suscriptores').updateOne({ email: normalizarEmail(email) }, { $set: cambios });
+  return buscarSuscriptorPorEmail(email);
+}
+
+async function actualizarEspecialidadesDeSuscriptor(email, especialidades) {
+  const base = await obtenerBase();
+  await base
+    .collection('suscriptores')
+    .updateOne({ email: normalizarEmail(email) }, { $set: { especialidades } });
+  return buscarSuscriptorPorEmail(email);
+}
+
+async function listarSuscriptores() {
+  const base = await obtenerBase();
+  return base
+    .collection('suscriptores')
+    .find({}, { projection: { tokenConfirmacion: 0 } })
+    .sort({ email: 1 })
+    .toArray();
+}
+
 module.exports = {
   obtenerBase,
   cerrar,
   registrarEjecucion,
   obtenerUltimaEjecucion,
   registrarEspecialidades,
+  sembrarCatalogo,
+  listarEspecialidades,
   obtenerIdsVistos,
   guardarVacantesNuevas,
   marcarNotificadas,
   obtenerSuscriptoresActivos,
   contarVacantes,
+  contarSuscriptores,
+  normalizarEmail,
+  buscarSuscriptorPorEmail,
+  crearSuscriptor,
+  confirmarSuscriptor,
+  cambiarEstadoSuscriptor,
+  actualizarEspecialidadesDeSuscriptor,
+  listarSuscriptores,
   NOMBRE_BD,
 };
