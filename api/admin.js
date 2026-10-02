@@ -1,9 +1,11 @@
 const db = require('../db');
-const { errorApi, verificarAdmin } = require('./_lib');
+const { errorApi, verificarAdmin, permitirCORS } = require('./_lib');
 
 const ESTADOS = ['activo', 'pendiente', 'pausado', 'baja', 'error-correo'];
 
 module.exports = async (req, res) => {
+  if (permitirCORS(req, res)) return;
+
   res.setHeader('Cache-Control', 'no-store');
 
   const permiso = verificarAdmin(req);

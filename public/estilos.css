@@ -57,6 +57,23 @@ legend {
 
 label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
 
+select {
+  width: 100%;
+  padding: 11px 12px;
+  font-size: 15px;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--texto);
+}
+
+select:focus {
+  outline: 2px solid var(--azul);
+  outline-offset: -1px;
+  border-color: var(--azul);
+}
+
 input[type="email"] {
   width: 100%;
   padding: 11px 12px;

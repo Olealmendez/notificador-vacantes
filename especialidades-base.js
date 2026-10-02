@@ -1,5 +1,6 @@
-const CATALOGO = [
-  'Música',
+const TODAS = 'Todas';
+
+const CATALOGO = [  'Música',
   'Arte Dramático',
   'Arte Visual',
   'Educación Física',
@@ -79,9 +80,34 @@ function juntar(listaPreferida, listaSecundaria) {
   return [...porClave.values()].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
+function coincideEspecialidad(texto, patron) {
+  return claveComparable(texto).includes(claveComparable(patron));
+}
+
+function quiereTodas(lista) {
+  return comoLista(lista).some((e) => claveComparable(e) === claveComparable(TODAS));
+}
+
+function comoLista(especialidades) {
+  if (Array.isArray(especialidades)) return especialidades.filter(Boolean).map(String);
+  if (typeof especialidades === 'string' && especialidades.trim()) return [especialidades.trim()];
+  return [];
+}
+
+function filtrarPorEspecialidades(vacantes, especialidades) {
+  const lista = comoLista(especialidades);
+  if (lista.length === 0) return [];
+  if (quiereTodas(lista)) return vacantes || [];
+  return (vacantes || []).filter((v) => lista.some((e) => coincideEspecialidad(v.especialidad, e)));
+}
+
 module.exports = {
   CATALOGO: sinDuplicar(CATALOGO),
+  TODAS,
   sinDuplicar,
   claveComparable,
   juntar,
+  coincideEspecialidad,
+  quiereTodas,
+  filtrarPorEspecialidades,
 };

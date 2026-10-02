@@ -1,8 +1,11 @@
 const db = require('../db');
+const { permitirCORS } = require('./_lib');
 
 const HORAS_SIN_REVISAR = Number(process.env.HORAS_SIN_REVISAR || 30);
 
 module.exports = async (req, res) => {
+  if (permitirCORS(req, res)) return;
+
   res.setHeader('Cache-Control', 'no-store');
 
   try {

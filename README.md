@@ -249,20 +249,23 @@ en el correo, para no mandar correos de verdad). Cierra con `Ctrl+C`.
 
 ## La página web
 
-Cualquiera puede suscribirse desde el navegador. No hace falta instalar nada.
+Cualquiera puede suscribirse desde el navegador. **Dos campos: una especialidad
+y un correo.** No hay que instalar nada.
 
 1. Abrís la dirección del sitio
-2. Escribís para filtrar las especialidades y marcá las tuyas
+2. Elegís la especialidad en el desplegable
 3. Ponés tu correo → te llega un correo de confirmación → lo abrís y listo
 
-Nadie recibe nada hasta que confirma su correo. Eso impide que alguien escriba el
-correo de otra persona y le haga llegar avisos, y también que se subscan
+Nadie recibe nada hasta que confirma su correo. Eso impide que alguien escriba
+el correo de otra persona y le haga llegar avisos, y también que se subscan
 miles de correos falsos.
 
-El catálogo de especialidades tiene una parte fija (las de enseñanza) y otra que
-se arma sola con lo que el MEP va publicando. La fija es importante: si nadie
-eligiera Música porque no hay vacantes de Música ahora mismo, no podría
-suscribirse justo cuando la necesita.
+El catálogo tiene una parte fija (las especialidades de enseñanza) y otra que se
+arma sola con lo que el MEP va publicando. La fija es importante: si solo
+usara lo que hay publicado ahora, Música desaparecería justo cuando no hay
+vacantes de música y nadie podría suscribirse.
+
+Quien elija **"Todas las especialidades"** recibe absolutamente todo.
 
 ### Administrar
 
@@ -270,15 +273,82 @@ En `/admin.html` con la contraseña de administración: ver quién está suscrit
 pausar a alguien o darlo de baja. Cada persona además puede darse de baja sola
 con el enlace que viene en cada correo.
 
-### Mirar cómo queda, sin publicarlo
+---
+
+## Publicarla gratis
+
+Son dos piezas: **la página** y **la API**. La página es un archivo estático y
+cualquiera puede alojarla, pero **la API necesita un sitio que ejecute código**
+porque guarda las claves de la base de datos. Si la página se publica sola y
+habla directamente con MongoDB, la clave queda escrita en el código del
+navegador y cualquiera que abra las herramientas del navegador la lee.
+
+Por eso hacen falta los dos. Estos son los caminos, de más simple a más flexible.
+
+### Opción 1 — Todo en Vercel (la más simple)
+
+Un solo servicio, un solo lugar donde poner las claves, y da una dirección
+pública lista para compartir.
+
+1. Entrá a [vercel.com](https://vercel.com) con tu cuenta de GitHub
+2. **Add New → Project** → importá `notificador-vacantes` → **Deploy**
+3. Settings → **Environment Variables** → agregá estas seis:
+
+| Variable | Qué poner |
+|---|---|
+| `MONGODB_URI` | la connection string de Atlas |
+| `APP_URL` | la dirección que te dio Vercel, con https |
+| `APP_SECRET` | una frase larga inventada por vos |
+| `ADMIN_PASSWORD` | la contraseña del panel |
+| `EMAIL_USER` | tu Gmail |
+| `EMAIL_PASS` | tu contraseña de aplicación |
+
+4. Redeploy. Listo.
+
+**Sin tarjeta de crédito.** El plan Hobby es $0 permanente. Cada vez que
+subís un commit a `main`, Vercel publica solo.
+
+### Opción 2 — La página en GitHub Pages, la API en Vercel
+
+Si preferís que la dirección sea `olealmendez.github.io/notificador-vacantes/`:
+
+1. Hacé la Opción 1 pero **solo** con la API. Anotá la dirección que te da
+   Vercel (algo como `https://notificador-vacantes.vercel.app`).
+2. En el repo, editá `public/config.js` y poné esa dirección:
+
+   ```js
+   window.CONFIG = { API: 'https://notificador-vacantes.vercel.app/', TODAS: 'Todas' };
+   ```
+
+3. En el repo: **Settings → Pages** → Source: **Deploy from a branch** →
+   rama `main`, carpeta `/ (root)` → Save
+4. La página queda en `https://olealmendez.github.io/notificador-vacantes/`
+
+La API ya tiene permiso para responder a ese origen, así que no hay que
+configurar nada más. Cada vez que subís un commit, GitHub Pages publica la
+página solo.
+
+### Por qué no Render
+
+Se duerme a los 15 minutos de no recibir visitas y tarda **cerca de un minuto**
+en despertar, mostrando una pantalla de carga. Para un formulario público donde
+entra un maestro después de una hora sin visitas, esa espera es intolerable.
+Vercel responde en milisegundos.
+
+### En los dos casos falta lo mismo
+
+Agregá también `APP_SECRET` como secreto en **GitHub → Settings → Secrets →
+Actions**, con **el mismo valor** que pusiste en Vercel. El robot en la nube
+lo usa para firmar los enlaces de baja. Si no coinciden, los enlaces de los
+correos saldrán rotos.
+
+### Mirar cómo queda sin publicarlo
 
 ```
 npm run web
 ```
 
-Levanta la página en `http://127.0.0.1:4788`. Es una vista de prueba: no manda
-correos de verdad y usa la base de datos normal, así que no te suscribas con
-direcciones falsas que no quieras.
+Levanta la página en `http://127.0.0.1:4788`. No manda correos de verdad.
 
 ## Dejarlo trabajando solo
 

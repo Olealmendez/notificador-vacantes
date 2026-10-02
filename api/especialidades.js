@@ -1,7 +1,10 @@
 const db = require('../db');
-const { ESPECIDADES_BASE } = require('../especialidades-base');
+const { CATALOGO } = require('../especialidades-base');
+const { permitirCORS } = require('./_lib');
 
 module.exports = async (req, res) => {
+  if (permitirCORS(req, res)) return;
+
   try {
     await db.sembrarCatalogo();
 

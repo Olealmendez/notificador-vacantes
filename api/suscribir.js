@@ -1,10 +1,11 @@
 const db = require('../db');
-const { CATALOGO, claveComparable } = require('../especialidades-base');
+const { CATALOGO, claveComparable, TODAS } = require('../especialidades-base');
 const {
   errorApi,
   tokenAleatorio,
   correoValido,
   enviarConfirmacion,
+  permitirCORS,
   MAX_SUSCRIPTORES,
 } = require('./_lib');
 
@@ -21,6 +22,8 @@ function leerCuerpo(req) {
 }
 
 module.exports = async (req, res) => {
+  if (permitirCORS(req, res)) return;
+
   if (req.method !== 'POST') {
     return errorApi(res, 405, 'Use POST');
   }
@@ -42,7 +45,9 @@ module.exports = async (req, res) => {
   try {
     const guardadas = (await db.listarEspecialidades()).map((e) => e.nombre);
     const validas = new Set([...guardadas, ...CATALOGO].map(claveComparable));
-    const desconocidas = elegidas.filter((e) => !validas.has(claveComparable(e)));
+    const desconocidas = elegidas.filter(
+      (e) => claveComparable(e) !== claveComparable(TODAS) && !validas.has(claveComparable(e)),
+    );
 
     if (desconocidas.length > 0) {
       return errorApi(res, 400, `Esa especialidad no existe: ${desconocidas.join(', ')}`);

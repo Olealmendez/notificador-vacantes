@@ -1,29 +1,18 @@
 (function () {
   'use strict';
 
+  var BASE = (window.CONFIG && window.CONFIG.API ? window.CONFIG.API : '').replace(/\/$/, '');
+
+  function api(ruta) {
+    return BASE + ruta;
+  }
+
   var form = document.getElementById('formulario');
-  var cajaEsp = document.getElementById('especialidades');
+  var desplegable = document.getElementById('especialidad');
   var ayudaEsp = document.getElementById('ayuda-esp');
-  var errorEsp = document.getElementById('error-esp');
-  var marcarTodas = document.getElementById('marcar-todas');
-  var ninguna = document.getElementById('ninguna');
-  var buscador = document.getElementById('buscar');
-  var contador = document.getElementById('contador');
-  var sinResultados = document.getElementById('sin-resultados');
   var campoEmail = document.getElementById('email');
   var boton = document.getElementById('enviar');
   var aviso = document.getElementById('aviso');
-
-  var todas = [];
-  var marcadas = {};
-  var visibles = [];
-
-  function sinAcentos(texto) {
-    return String(texto == null ? '' : texto)
-      .normalize('NFD')
-      .replace(/\p{M}/gu, '')
-      .toLowerCase();
-  }
 
   function mostrarAviso(texto, tipo) {
     aviso.textContent = texto;
@@ -31,58 +20,8 @@
     aviso.hidden = false;
   }
 
-  function elegidas() {
-    return todas.filter(function (nombre) {
-      return marcadas[nombre];
-    });
-  }
-
-  function pintar() {
-    var filtro = sinAcentos(buscador.value).trim();
-    visibles = todas.filter(function (nombre) {
-      return !filtro || sinAcentos(nombre).indexOf(filtro) !== -1;
-    });
-
-    cajaEsp.innerHTML = '';
-
-    visibles.forEach(function (nombre) {
-      var label = document.createElement('label');
-      var input = document.createElement('input');
-      input.type = 'checkbox';
-      input.value = nombre;
-      input.checked = Boolean(marcadas[nombre]);
-      input.addEventListener('change', function () {
-        marcadas[nombre] = input.checked;
-        actualizarContador();
-      });
-
-      var texto = document.createElement('span');
-      texto.textContent = nombre;
-
-      label.appendChild(input);
-      label.appendChild(texto);
-      cajaEsp.appendChild(label);
-    });
-
-    sinResultados.hidden = visibles.length > 0;
-    actualizarContador(visibles.length);
-  }
-
-  function actualizarContador(visibles) {
-    var marcadasN = elegidas().length;
-    var total = visibles === undefined ? todas.length : visibles;
-
-    if (marcadasN === 0) {
-      contador.textContent = total + ' especialidades en la lista.';
-    } else if (marcadasN === 1) {
-      contador.textContent = '1 elegida: ' + elegidas()[0] + '.';
-    } else {
-      contador.textContent = marcadasN + ' elegidas de ' + todas.length + '.';
-    }
-  }
-
   function cargarEspecialidades() {
-    fetch('/api/especialidades')
+    return fetch(api('/api/especialidades'))
       .then(function (r) {
         return r.json();
       })
@@ -90,15 +29,35 @@
         if (!datos.ok || !datos.especialidades || !datos.especialidades.length) {
           throw new Error('lista vacia');
         }
-        todas = datos.especialidades;
+
+        desplegable.innerHTML = '';
+
+        var elegí = document.createElement('option');
+        elegí.value = '';
+        elegí.textContent = 'Elige una especialidad…';
+        elegí.disabled = true;
+        elegí.selected = true;
+        desplegable.appendChild(elegí);
+
+        var todas = document.createElement('option');
+        todas.value = window.CONFIG.TODAS || 'Todas';
+        todas.textContent = 'Todas las especialidades';
+        desplegable.appendChild(todas);
+
+        datos.especialidades.forEach(function (nombre) {
+          var opcion = document.createElement('option');
+          opcion.value = nombre;
+          opcion.textContent = nombre;
+          desplegable.appendChild(opcion);
+        });
+
         ayudaEsp.textContent =
-          'Marca las que te interesan. Puedes escribir arriba para filtrar la lista.';
-        marcarTodas.hidden = false;
-        ninguna.hidden = false;
-        pintar();
+          datos.especialidades.length + ' especialidades disponibles. Cambiala cuando quieras.';
       })
       .catch(function () {
-        ayudaEsp.textContent = 'No se pudo cargar la lista. Recarga la página e intenta de nuevo.';
+        desplegable.innerHTML = '<option value="">No se pudo cargar la lista</option>';
+        ayudaEsp.textContent =
+          'No pudimos cargar las especialidades. Revisa tu internet o intenta más tarde.';
       });
   }
 
@@ -106,7 +65,7 @@
     var punto = document.getElementById('punto-salud');
     var texto = document.getElementById('texto-salud');
 
-    fetch('/api/estado')
+    fetch(api('/api/estado'))
       .then(function (r) {
         return r.json();
       })
@@ -116,7 +75,7 @@
         punto.className = 'punto ' + d.salud;
 
         if (!d.ultimaRevision) {
-          texto.textContent = 'El sistema todavia no ha hecho ninguna revision.';
+          texto.textContent = 'Todavía no se ha hecho ninguna revisión.';
           return;
         }
 
@@ -127,11 +86,10 @@
             : 'hace ' + Math.round(h) + (h < 2 ? ' hora' : ' horas');
 
         if (d.salud === 'roja') {
-          texto.textContent =
-            'Atencion: la ultima revision fue ' + momento + '. Puede haber una falla.';
+          texto.textContent = 'Atención: la última revisión fue ' + momento + '. Puede haber una falla.';
         } else {
           texto.textContent =
-            'Ultima revision ' + momento + '. ' + d.suscriptoresActivos + ' persona(s) suscrita(s).';
+            'Última revisión ' + momento + '. ' + d.suscriptoresActivos + ' persona(s) suscrita(s).';
         }
       })
       .catch(function () {
@@ -140,34 +98,21 @@
       });
   }
 
-  buscador.addEventListener('input', pintar);
-
-  marcarTodas.addEventListener('click', function () {
-    visibles.forEach(function (n) {
-      marcadas[n] = true;
-    });
-    pintar();
-  });
-
-  ninguna.addEventListener('click', function () {
-    marcadas = {};
-    pintar();
-  });
-
   form.addEventListener('submit', function (evento) {
     evento.preventDefault();
     aviso.hidden = true;
-    errorEsp.hidden = true;
 
-    var lista = elegidas();
+    var especialidad = desplegable.value;
 
-    if (lista.length === 0) {
-      errorEsp.hidden = false;
-      document.getElementById('especialidades').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!especialidad) {
+      mostrarAviso('Elegí una especialidad.', 'mal');
+      desplegable.focus();
       return;
     }
 
-    if (!campoEmail.value.trim()) {
+    var correo = campoEmail.value.trim();
+
+    if (!correo) {
       mostrarAviso('Escribí tu correo electrónico.', 'mal');
       campoEmail.focus();
       return;
@@ -176,10 +121,10 @@
     boton.disabled = true;
     boton.textContent = 'Enviando…';
 
-    fetch('/api/suscribir', {
+    fetch(api('/api/suscribir'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: campoEmail.value, especialidades: lista }),
+      body: JSON.stringify({ email: correo, especialidades: [especialidad] }),
     })
       .then(function (r) {
         return r.json().then(function (d) {
@@ -189,10 +134,8 @@
       .then(function (r) {
         if (r.ok && r.datos.ok) {
           mostrarAviso(r.datos.mensaje, 'bien');
-          marcadas = {};
-          pintar();
-          buscador.value = '';
-          pintar();
+          form.reset();
+          desplegable.selectedIndex = 0;
         } else {
           mostrarAviso(r.datos.error || 'No se pudo completar la solicitud.', 'mal');
         }

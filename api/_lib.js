@@ -14,6 +14,24 @@ const REGEX_CORREO = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
 
 let transporter = null;
 
+function permitirCORS(req, res) {
+  const origen = req.headers.origin;
+  if (origen) {
+    res.setHeader('Access-Control-Allow-Origin', origen);
+    res.setHeader('Vary', 'Origin');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-password');
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return true;
+  }
+  return false;
+}
+
 function errorApi(res, codigo, mensaje, extra = {}) {
   return res.status(codigo).json({ ok: false, error: mensaje, ...extra });
 }
@@ -130,6 +148,7 @@ module.exports = {
   MAX_SUSCRIPTORES,
   EMAIL_USER,
   NOMBRE_REMITENTE,
+  permitirCORS,
   errorApi,
   tokenAleatorio,
   tokenBaja,

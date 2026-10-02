@@ -3,6 +3,7 @@ require('dotenv').config({ quiet: true });
 const { buscarVacantesDetallado } = require('./scraper');
 const { enviarAPersona } = require('./mailer');
 const { urlBaja } = require('./tokens');
+const { quiereTodas, filtrarPorEspecialidades } = require('./especialidades-base');
 const db = require('./db');
 
 const EMAIL_TO = process.env.EMAIL_TO || '';
@@ -96,11 +97,13 @@ async function main() {
   let enviados = 0;
 
   for (const destinatario of destinatarios) {
-    const suyas = nuevas.filter((v) =>
-      destinatario.especialidades.some((e) => coincide(v.especialidad, e)),
-    );
+    const suyas = filtrarPorEspecialidades(nuevas, destinatario.especialidades);
 
     if (suyas.length === 0) continue;
+
+    const etiqueta = quiereTodas(destinatario.especialidades)
+      ? 'todas las especialidades'
+      : destinatario.especialidades.join(' / ');
 
     let baja = '';
     try {
@@ -111,7 +114,7 @@ async function main() {
 
     try {
       await enviarAPersona(destinatario.email, suyas, {
-        etiqueta: destinatario.especialidades.join(' / '),
+        etiqueta,
         urlBaja: baja,
       });
       enviados += 1;

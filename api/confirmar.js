@@ -1,7 +1,9 @@
 const db = require('../db');
-const { urlBaja } = require('./_lib');
+const { urlBaja, permitirCORS } = require('./_lib');
 
 module.exports = async (req, res) => {
+  if (permitirCORS(req, res)) return;
+
   const token = (req.query && req.query.token) || '';
 
   if (!token) {
