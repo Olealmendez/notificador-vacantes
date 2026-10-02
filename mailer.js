@@ -50,6 +50,11 @@ function obtenerTransporter() {
 
 function construirHtml(vacantes, etiqueta, opciones = {}) {
   const linea = etiqueta || ESPECIALIDAD_BUSCADA;
+  const encabezado = opciones.encabezado || `Vacantes nuevas de ${linea}`;
+  const titulo = opciones.titulo || 'Vacantes nuevas';
+  const subtitulo =
+    opciones.subtitulo ||
+    `${vacantes.length} vacante(s) detectada(s) que no estaban en tu historial.`;
   const baja = opciones.urlBaja
     ? `<p style="margin:0"><a href="${escaparHtml(opciones.urlBaja)}" style="color:#5f6368">Darte de baja de estos avisos</a></p>`
     : '';
@@ -84,13 +89,13 @@ function construirHtml(vacantes, etiqueta, opciones = {}) {
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Vacantes nuevas</title>
+  <title>${escaparHtml(titulo)}</title>
 </head>
 <body style="margin:0;padding:24px;background:#f4f5f7;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#202124;">
   <div style="max-width:900px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.12);">
     <div style="background:#1a73e8;padding:20px 24px;">
-      <h1 style="margin:0;font-size:20px;color:#ffffff;">Vacantes nuevas de ${escaparHtml(linea)}</h1>
-      <p style="margin:6px 0 0;font-size:14px;color:#e8f0fe;">${escaparHtml(vacantes.length)} vacante(s) detectada(s) que no estaban en tu historial.</p>
+      <h1 style="margin:0;font-size:20px;color:#ffffff;">${escaparHtml(encabezado)}</h1>
+      <p style="margin:6px 0 0;font-size:14px;color:#e8f0fe;">${escaparHtml(subtitulo)}</p>
     </div>
 
     <div style="padding:24px;">
@@ -162,21 +167,24 @@ async function enviarResumen({ para, vacantes, etiqueta, urlBaja }) {
   validarConfiguracion();
 
   const lista = etiqueta || ESPECIALIDAD_BUSCADA;
+  const total = vacantes.length;
 
-  const html = construirHtml(vacantes, lista, { urlBaja }).replace(
-    'Vacantes nuevas de',
-    'Ya hay ' + vacantes.length + ' vacante(s) abierta(s) de',
-  );
+  const html = construirHtml(vacantes, lista, {
+    urlBaja,
+    titulo: `Hay ${total} vacante(s) abierta(s)`,
+    encabezado: `Hay ${total} vacante(s) abierta(s) de ${lista}`,
+    subtitulo: `${total} vacante(s) publicada(s) ahora mismo que te interesan.`,
+  });
 
   const texto = construirTextoPlano(vacantes, lista, { urlBaja }).replace(
-    'Vacantes nuevas de',
-    'Ya hay ' + vacantes.length + ' vacante(s) abierta(s) de',
+    `Vacantes nuevas de ${lista}`,
+    `Hay ${total} vacante(s) abierta(s) de ${lista}`,
   );
 
   const info = await obtenerTransporter().sendMail({
     from: `"${EMAIL_FROM_NOMBRE}" <${process.env.EMAIL_USER}>`,
     to: para,
-    subject: `Hay ${vacantes.length} vacante(s) abierta(s) de ${lista} en el MEP`,
+    subject: `Hay ${total} vacante(s) abierta(s) de ${lista} en el MEP`,
     text: texto,
     html,
   });

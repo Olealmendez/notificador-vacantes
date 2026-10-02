@@ -10,9 +10,20 @@
   var dbDias = 90;
 
   function mostrarAviso(texto, tipo) {
-    aviso.textContent = texto;
-    aviso.className = 'aviso ' + tipo;
-    aviso.hidden = false;
+    var destino = panel.hidden ? acceso : panel;
+    var caja = document.getElementById('aviso-panel');
+
+    if (!caja) {
+      caja = document.createElement('div');
+      caja.id = 'aviso-panel';
+      caja.className = 'aviso';
+      panel.insertBefore(caja, panel.firstChild);
+    }
+
+    caja.textContent = texto;
+    caja.className = 'aviso ' + tipo;
+    caja.hidden = false;
+    void destino;
   }
 
   function clave() {
@@ -102,20 +113,44 @@
       if (estado === 'resumen' && !window.confirm('Mandar a ' + correo + ' un correo con las vacantes abiertas que ya hay?')) return;
 
       b.disabled = true;
+      b.textContent = '...';
+
+      var cuerpo = { email: correo };
+      if (estado === 'resumen') {
+        cuerpo.accion = 'resumen';
+      } else {
+        cuerpo.accion = 'estado';
+        cuerpo.estado = estado;
+      }
 
       fetch('/api/admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': clave() },
-        body: JSON.stringify({ email: correo, accion: 'estado', estado: estado }),
+        body: JSON.stringify(cuerpo),
       })
         .then(function (r) {
-          return r.json();
+          return r.json().then(function (d) {
+            return { ok: r.ok, datos: d };
+          });
         })
-        .then(function () {
+        .then(function (r) {
+          if (!r.ok || !r.datos.ok) {
+            mostrarAviso(r.datos.error || 'No se pudo completar la accion.', 'mal');
+            return;
+          }
+          if (estado === 'resumen') {
+            mostrarAviso('Correo enviado a ' + correo + ': ' + r.datos.enviadas + ' vacante(s) abierta(s).', 'bien');
+          } else {
+            mostrarAviso('Listo: ' + correo + ' ahora esta en ' + estado + '.', 'bien');
+          }
           cargar();
         })
         .catch(function () {
+          mostrarAviso('No se pudo conectar con el servidor.', 'mal');
+        })
+        .then(function () {
           b.disabled = false;
+          b.textContent = texto;
         });
     });
     return b;

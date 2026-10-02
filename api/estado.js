@@ -28,6 +28,7 @@ module.exports = async (req, res) => {
 
     res.status(200).json({
       ok: true,
+      version: require('../package.json').version,
       ultimaRevision: ultima
         ? {
             inicio: ultima.inicio,

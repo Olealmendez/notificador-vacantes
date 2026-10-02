@@ -1,5 +1,4 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "build": {
     "env": {
       "PUPPETEER_SKIP_DOWNLOAD": "1"
