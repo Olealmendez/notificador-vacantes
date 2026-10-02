@@ -355,6 +355,43 @@ El robot en la nube lo usa para firmar los enlaces de baja. Si los dos valores
 no coinciden, los enlaces de los correos salen rotos y nadie se puede dar de
 baja. Es lo único que hay que mantener igual en los dos sitios.
 
+## Cuánto le cabe a la base de datos
+
+Atlas en su plan gratuito da **512 MB**. Medido hoy, el sistema usa **0.41 MB**,
+o sea el 0.08%.
+
+| Qué crece | Cuánto |
+|---|---|
+| Registro de corridas (330 al mes) | 61 KB/mes |
+| Vacantes nuevas (unas 80 al mes) | 28 KB/mes |
+| **Total** | **~1 MB por año** |
+
+Al ritmo actual, el plan gratuito se llenaría en **más de 700 años**. No hace
+falta otra base de datos ni migrar nada.
+
+Aun así, el registro de corridas se borra solo a los 90 días gracias a un
+índice de expiración de MongoDB, por si el uso creciera. Eso no se nota ni hay
+que hacerlo a mano. El panel de administración muestra cuánto se está usando.
+
+Las vacantes **no** se borran: son la memoria que evita avisarte dos veces de lo
+mismo. Ocupan 361 bytes cada una.
+
+### Por qué no conviene poner la base dentro de un contenedor gratis
+
+Suena más simple, pero es una mala idea:
+
+- Los contenedores gratuitos de Render (y similares) **no tienen disco
+  permanente**. Todo lo que guardes se pierde en cada despliegue y cada vez que
+  el servicio se duerme.
+- MongoDB necesita unos 256 MB de memoria solo para arrancar, y esos servicios
+  dan 512 MB en total contando la aplicación.
+
+O sea: la base se quedaría sin espacio a la primera caída. Atlas no tiene ese
+problema y mientras no se pase de 512 MB no te cobra un centavo.
+
+Si algún día hicieran falta más de 512 MB, el salto natural es el plan Flex de
+Atlas (desde $8 al mes) o MongoDB en un servidor propio. Hoy no tiene sentido.
+
 ### Mirar cómo queda sin publicarlo
 
 ```

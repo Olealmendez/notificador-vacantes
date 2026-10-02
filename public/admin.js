@@ -7,6 +7,7 @@
   var aviso = document.getElementById('aviso');
   var filas = document.getElementById('filas');
   var resumen = document.getElementById('resumen');
+  var dbDias = 90;
 
   function mostrarAviso(texto, tipo) {
     aviso.textContent = texto;
@@ -26,10 +27,18 @@
     });
   }
 
-  function pintarSuscriptores(lista, resumenDatos) {
-    resumen.textContent =
+  function pintarSuscriptores(lista, resumenDatos, base) {
+    var texto =
       resumenDatos.total + ' en total · ' + resumenDatos.activos + ' activos · ' +
       resumenDatos.pendientes + ' pendientes de confirmar.';
+
+    if (base) {
+      texto +=
+        ' Base de datos: ' + base.usadoMB + ' MB de ' + base.limiteMB +
+        ' (' + base.porcentaje + '%). El registro de corridas se borra solo cada ' +
+        dbDias + ' días.';
+    }
+    resumen.textContent = texto;
 
     filas.innerHTML = '';
 
@@ -118,7 +127,7 @@
         }
         acceso.hidden = true;
         panel.hidden = false;
-        pintarSuscriptores(r.datos.suscriptores, r.datos.resumen);
+        pintarSuscriptores(r.datos.suscriptores, r.datos.resumen, r.datos.base);
       })
       .catch(function () {
         mostrarAviso('No se pudo conectar con el servidor.', 'mal');
@@ -161,7 +170,8 @@
         document.getElementById('clave').value = '';
         acceso.hidden = true;
         panel.hidden = false;
-        pintarSuscriptores(r.datos.suscriptores, r.datos.resumen);
+        dbDias = r.datos.logSeBorraCadaDias || 90;
+        pintarSuscriptores(r.datos.suscriptores, r.datos.resumen, r.datos.base);
         estadoSistema();
       } else {
         mostrarAviso(r.datos.error || 'Contrasena incorrecta.', 'mal');

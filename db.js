@@ -39,6 +39,8 @@ function describirErrorConexion(err) {
   return base;
 }
 
+const DIAS_LOG = Number(process.env.DIAS_LOG || 90);
+
 async function obtenerBase() {
   if (!cliente) {
     const nuevo = new MongoClient(obtenerUri(), { serverSelectionTimeoutMS: 20000 });
@@ -55,14 +57,43 @@ async function obtenerBase() {
 
   const base = cliente.db(NOMBRE_BD);
 
+  const idxEjec = base.collection('ejecuciones');
+
+  try {
+    await idxEjec.dropIndex('inicio_-1');
+  } catch {
+    void 0;
+  }
+
   await Promise.all([
     base.collection('vacantes').createIndex({ id: 1 }, { unique: true }),
-    base.collection('ejecuciones').createIndex({ inicio: -1 }),
+    idxEjec.createIndex(
+      { inicio: 1 },
+      { expireAfterSeconds: DIAS_LOG * 86400 },
+    ),
     base.collection('especialidades').createIndex({ nombre: 1 }, { unique: true }),
     base.collection('suscriptores').createIndex({ email: 1 }, { unique: true }),
   ]);
 
   return base;
+}
+
+async function medirUso() {
+  try {
+    const base = await obtenerBase();
+    const stats = await base.command({ dbStats: 1 });
+    const bytes = stats.storageSize + stats.indexSize;
+
+    return {
+      usadoBytes: bytes,
+      limiteBytes: 512 * 1024 * 1024,
+      porcentaje: Math.round((bytes / (512 * 1024 * 1024)) * 100000) / 1000,
+      documentos: stats.objects,
+    };
+  } catch (err) {
+    console.error('[db] no se pudo medir el uso:', err.message);
+    return null;
+  }
 }
 
 async function cerrar() {
@@ -275,6 +306,8 @@ async function listarSuscriptores() {
 module.exports = {
   obtenerBase,
   cerrar,
+  medirUso,
+  DIAS_LOG,
   registrarEjecucion,
   obtenerUltimaEjecucion,
   registrarEspecialidades,

@@ -18,6 +18,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const lista = await db.listarSuscriptores();
       const ultima = await db.obtenerUltimaEjecucion();
+      const uso = await db.medirUso();
 
       return res.status(200).json({
         ok: true,
@@ -35,6 +36,15 @@ module.exports = async (req, res) => {
           activos: lista.filter((s) => s.estado === 'activo').length,
           pendientes: lista.filter((s) => s.estado === 'pendiente').length,
         },
+        base: uso
+          ? {
+              usadoMB: Math.round((uso.usadoBytes / 1024 / 1024) * 100) / 100,
+              limiteMB: 512,
+              porcentaje: uso.porcentaje,
+              documentos: uso.documentos,
+            }
+          : null,
+        logSeBorraCadaDias: db.DIAS_LOG,
         ultimaRevision: ultima,
       });
     }
