@@ -1,5 +1,7 @@
 const db = require('../db');
 const { errorApi, verificarAdmin, permitirCORS } = require('./_lib');
+const { urlBaja } = require('../tokens');
+const { enviarResumen } = require('../mailer');
 
 const ESTADOS = ['activo', 'pendiente', 'pausado', 'baja', 'error-correo'];
 
@@ -29,6 +31,7 @@ module.exports = async (req, res) => {
           solicitadoEn: s.solicitadoEn,
           confirmadoEn: s.confirmadoEn,
           dadoDeBajaEn: s.dadoDeBajaEn,
+          resumenEnviadoEn: s.resumenEnviadoEn || null,
           motivo: s.pausadoMotivo || '',
         })),
         resumen: {
@@ -71,6 +74,31 @@ module.exports = async (req, res) => {
         });
         if (!cambiado) return errorApi(res, 404, 'Ese correo no esta suscrito');
         return res.status(200).json({ ok: true, suscriptor: cambiado.email, estado: destino });
+      }
+
+      if (accion === 'resumen') {
+        const suscriptor = await db.buscarSuscriptorPorEmail(correo);
+        if (!suscriptor) return errorApi(res, 404, 'Ese correo no esta suscrito');
+
+        const abiertas = await db.obtenerVacantesAbiertas(suscriptor.especialidades || []);
+
+        if (abiertas.length === 0) {
+          return errorApi(res, 404, 'No hay vacantes abiertas de esa especialidad ahora mismo');
+        }
+
+        await enviarResumen({
+          para: suscriptor.email,
+          vacantes: abiertas,
+          etiqueta: (suscriptor.especialidades || []).join(' / '),
+          urlBaja: urlBaja(suscriptor.email),
+        });
+
+        await db.cambiarEstadoSuscriptor(correo, suscriptor.estado, {
+          resumenEnviadoEn: new Date(),
+          resumenVacantes: abiertas.length,
+        });
+
+        return res.status(200).json({ ok: true, enviadas: abiertas.length });
       }
 
       return errorApi(res, 400, 'Accion no reconocida');

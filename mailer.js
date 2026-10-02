@@ -155,6 +155,36 @@ async function enviarAPersona(destinatario, vacantesNuevas, opciones = {}) {
   return info;
 }
 
+async function enviarResumen({ para, vacantes, etiqueta, urlBaja }) {
+  if (!para) throw new Error('enviarResumen necesita un destinatario');
+  if (!Array.isArray(vacantes) || vacantes.length === 0) return null;
+
+  validarConfiguracion();
+
+  const lista = etiqueta || ESPECIALIDAD_BUSCADA;
+
+  const html = construirHtml(vacantes, lista, { urlBaja }).replace(
+    'Vacantes nuevas de',
+    'Ya hay ' + vacantes.length + ' vacante(s) abierta(s) de',
+  );
+
+  const texto = construirTextoPlano(vacantes, lista, { urlBaja }).replace(
+    'Vacantes nuevas de',
+    'Ya hay ' + vacantes.length + ' vacante(s) abierta(s) de',
+  );
+
+  const info = await obtenerTransporter().sendMail({
+    from: `"${EMAIL_FROM_NOMBRE}" <${process.env.EMAIL_USER}>`,
+    to: para,
+    subject: `Hay ${vacantes.length} vacante(s) abierta(s) de ${lista} en el MEP`,
+    text: texto,
+    html,
+  });
+
+  console.log(`[mailer] Resumen enviado a ${para} (${vacantes.length} vacante(s) abierta(s)).`);
+  return info;
+}
+
 async function enviarAlerta(vacantesNuevas) {
   if (!Array.isArray(vacantesNuevas) || vacantesNuevas.length === 0) {
     console.log('[mailer] No hay vacantes nuevas. No se envia correo.');
@@ -182,6 +212,7 @@ async function enviarAlerta(vacantesNuevas) {
 module.exports = {
   enviarAlerta,
   enviarAPersona,
+  enviarResumen,
   construirHtml,
   construirTextoPlano,
 };

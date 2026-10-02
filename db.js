@@ -1,8 +1,14 @@
 require('dotenv').config({ quiet: true });
 
 const { MongoClient } = require('mongodb');
-const { CATALOGO, sinDuplicar, juntar } = require('./especialidades-base');
+const { CATALOGO, sinDuplicar, juntar, filtrarPorEspecialidades } = require('./especialidades-base');
 const { esTokenValido, LONGITUD_TOKEN_CONFIRMAR } = require('./tokens');
+
+function fechaVence(texto) {
+  const m = String(texto ?? '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+}
 
 const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 const NOMBRE_BD = process.env.MONGO_BD || 'notificador';
@@ -238,6 +244,20 @@ async function contarSuscriptores(estado) {
   return base.collection('suscriptores').countDocuments(estado ? { estado } : {});
 }
 
+// Vacantes que siguen abiertas y que le interesan a estas especialidades.
+// Se usa para avisarle a quien se acaba de suscribir de lo que ya hay
+// publicado, y no solo de lo que aparezca en el futuro.
+async function obtenerVacantesAbiertas(especialidades) {
+  const base = await obtenerBase();
+  const hoy = new Date();
+  const todas = await base.collection('vacantes').find({}).toArray();
+
+  return todas.filter((v) => {
+    const f = fechaVence(v.vence);
+    return f && f >= hoy && filtrarPorEspecialidades([v], especialidades).length > 0;
+  });
+}
+
 async function buscarSuscriptorPorEmail(correo) {
   const base = await obtenerBase();
   return base.collection('suscriptores').findOne({ email: normalizarEmail(correo) });
@@ -372,6 +392,8 @@ module.exports = {
   obtenerSuscriptoresActivos,
   contarVacantes,
   contarSuscriptores,
+  obtenerVacantesAbiertas,
+  fechaVence,
   normalizarEmail,
   buscarSuscriptorPorEmail,
   crearSuscriptor,

@@ -80,6 +80,9 @@
       if (s.estado !== 'baja') {
         tdAcc.appendChild(boton('Borrar', s.email, 'baja'));
       }
+      if (s.estado === 'activo') {
+        tdAcc.appendChild(boton('Avisar lo que ya hay', s.email, 'resumen'));
+      }
 
       tr.appendChild(tdCorreo);
       tr.appendChild(tdEstado);
@@ -96,6 +99,7 @@
     b.style.marginRight = '4px';
     b.addEventListener('click', function () {
       if (estado === 'baja' && !window.confirm('Dar de baja a ' + correo + '?')) return;
+      if (estado === 'resumen' && !window.confirm('Mandar a ' + correo + ' un correo con las vacantes abiertas que ya hay?')) return;
 
       b.disabled = true;
 

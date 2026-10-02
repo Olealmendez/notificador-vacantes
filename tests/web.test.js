@@ -125,6 +125,45 @@ test('suscribirse de nuevo con lo mismo no manda otro correo', async () => {
   assert.match(r.cuerpo.mensaje, /ya estas suscrito/i);
 });
 
+test('el resumen al suscribir solo incluye vacantes abiertas de esa especialidad', async () => {
+  const base = await db.obtenerBase();
+  const col = base.collection('vacantes');
+
+  await col.deleteMany({});
+  const hoy = new Date();
+
+  const fmt = (d) =>
+    `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+  const ayer = new Date(hoy.getTime() - 86400000);
+  const enUnMes = new Date(hoy.getTime() + 30 * 86400000);
+
+  await col.insertMany([
+    { id: 'a1', especialidad: 'Música/Música', centroEducativo: 'Abierta', vence: fmt(enUnMes) },
+    { id: 'a2', especialidad: 'Inglés', centroEducativo: 'Otra especialidad', vence: fmt(enUnMes) },
+    { id: 'a3', especialidad: 'Música', centroEducativo: 'Vencida', vence: fmt(ayer) },
+  ]);
+
+  const paraMusica = await db.obtenerVacantesAbiertas(['Música']);
+  assert.strictEqual(paraMusica.length, 1, 'solo debe traer la de musica que sigue abierta');
+  assert.strictEqual(paraMusica[0].centroEducativo, 'Abierta');
+
+  const paraTodas = await db.obtenerVacantesAbiertas(['Todas']);
+  assert.strictEqual(paraTodas.length, 2, '"Todas" trae las dos abiertas, no la vencida');
+
+  const paraIngles = await db.obtenerVacantesAbiertas(['Inglés']);
+  assert.strictEqual(paraIngles.length, 1);
+
+  const paraNada = await db.obtenerVacantesAbiertas(['Klingon']);
+  assert.strictEqual(paraNada.length, 0);
+
+  const comprobacion = await db.obtenerVacantesAbiertas(['Música']);
+  const vencida = comprobacion.find((v) => v.centroEducativo === 'Vencida');
+  assert.ok(!vencida, 'una vacante vencida no debe salir');
+
+  await col.deleteMany({});
+});
+
 test('el enlace de baja solo afecta a su propio correo', async () => {
   const { tokenBaja } = require('../tokens.js');
   const base = await db.obtenerBase();
