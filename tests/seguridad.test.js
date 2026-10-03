@@ -5,6 +5,7 @@ const path = require('path');
 process.env.APP_SECRET = 'secreto-de-prueba';
 process.env.ADMIN_PASSWORD = 'clave-de-prueba';
 process.env.MONGO_BD = 'prueba_seguridad';
+process.env.EMAIL_SIMULAR = '1';
 
 const RAIZ = path.join(__dirname, '..');
 

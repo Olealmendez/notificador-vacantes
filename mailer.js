@@ -7,6 +7,7 @@ const ESPECIALIDAD_BUSCADA = process.env.ESPECIALIDAD_BUSCADA || 'Música';
 
 let transporter = null;
 let transporterEmailUser = null;
+let simulador = null;
 
 function escaparHtml(texto) {
   return String(texto ?? '')
@@ -36,6 +37,17 @@ function validarConfiguracion(exigeDestinatario = false) {
 
 function obtenerTransporter() {
   const user = process.env.EMAIL_USER;
+
+  if (process.env.EMAIL_SIMULAR === '1') {
+    if (simulador) return simulador;
+    simulador = {
+      async sendMail(mensaje) {
+        console.log(`[correo simulado] para=${mensaje.to} asunto="${mensaje.subject}"`);
+        return { simulated: true, messageId: 'simulado' };
+      },
+    };
+    return simulador;
+  }
 
   if (transporter && transporterEmailUser === user) return transporter;
 

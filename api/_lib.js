@@ -70,8 +70,22 @@ function verificarAdmin(req) {
   return a.length === b.length && crypto.timingSafeEqual(a, b) ? { ok: true } : { ok: false, motivo: 'Contrasena incorrecta' };
 }
 
+function simularCorreo() {
+  return process.env.EMAIL_SIMULAR === '1';
+}
+
 function obtenerTransporter() {
   if (transporter) return transporter;
+
+  if (simularCorreo()) {
+    transporter = {
+      async sendMail(mensaje) {
+        console.log(`[correo simulado] para=${mensaje.to} asunto="${mensaje.subject}"`);
+        return { simulated: true, messageId: 'simulado' };
+      },
+    };
+    return transporter;
+  }
 
   if (!EMAIL_USER || !EMAIL_PASS) {
     throw new Error('Faltan EMAIL_USER o EMAIL_PASS en las variables de Vercel');
